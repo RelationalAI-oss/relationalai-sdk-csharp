@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>Relational.AI</id>
+    <version>$version$</version>
+    <title>RelationalAI SDK</title>
+    <authors>Mohammad Dashti</authors>
+    <owners>RelationalAI</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://www.relational.ai/</projectUrl>
+    <!-- not support by nuget 4 used by Nix <icon>favicon.ico</icon> -->
+    <description>This is the RelationalAI C# client SDK and you can use it to connect to the RelationalAI infrastructure.</description>
+    <copyright>Copyright 2017-2020</copyright>
+  </metadata>
+</package>

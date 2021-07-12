@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>1.2.0</Version>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <PackageId>RelationalAI</PackageId>
+    <Authors>Mohammad Dashti and Helmi Nour</Authors>
+    <Company>RelationalAI</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <RepositoryUrl>https://github.com/RelationalAI-oss/RelationalAICSharpClient</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/RelationalAI-oss/RelationalAICSharpClient</PackageProjectUrl>
+    <Description>
+        This is the RelationalAI C# client SDK and you can use it to connect to the RelationalAI infrastructure.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="NSec.Cryptography" Version="20.2.0" />
+    <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
+  </ItemGroup>
+</Project>

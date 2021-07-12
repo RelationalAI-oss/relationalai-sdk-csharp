@@ -1,0 +1,132 @@
+# This workflow will create a release on any version update
+
+name: New C# SDK Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+
+  doConditionalRelease:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Fetch Current Version
+      id: fetch_current_version
+      run: grep "<Version>.*</Version>" ./RelationalAI/RelationalAI.csproj | awk -F '[<>]' '/Version/{print "::set-output name=current_version::v"$3}'
+
+    - name: Show Current Version
+      run: "echo current version: ${{ steps.fetch_current_version.outputs.current_version }}"
+
+    - name: Fetch All Releases
+      id: fetch_all_releases
+      run: |
+        RELEASES="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases)"
+        RELEASES="${RELEASES//'%'/'%25'}" # to escape the string and make it ready for `set-output`
+        RELEASES="${RELEASES//$'\n'/'%0A'}"
+        RELEASES="${RELEASES//$'\r'/'%0D'}"
+        echo "::set-output name=all_releases::$RELEASES"
+
+    - name: Show All Releases
+      run: "echo all releases: ${{ join(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, ', ') }}"
+
+    # As we are using `GITHUB_TOKEN` for auth, this workflow does not trigger the `nuget-pack` workflow, so we need to inline it below
+
+    - name: Setup .NET Core  # required by the `gpr` tool
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+
+    # - name: Setup .NET Core # required by ClientSDK
+    #   if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+    #   uses: actions/setup-dotnet@v1
+    #   with:
+    #     dotnet-version: 5.0.100-rc.2.20479.15
+
+    - name: Install dependencies
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      run: dotnet restore
+    - name: Build
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      run: dotnet build --configuration Release --no-restore
+
+#    - name: Test
+#      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+#      run: dotnet test --no-restore --verbosity normal
+
+    - name: Pack
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      run: dotnet pack --configuration Release --no-restore --include-symbols
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.fetch_current_version.outputs.current_version }}
+        release_name: Release ${{ steps.fetch_current_version.outputs.current_version }}
+        body: Delve C# Client SDK ${{ steps.fetch_current_version.outputs.current_version }}.
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        tag_name="${{ steps.fetch_current_version.outputs.current_version }}"
+        hub release edit $(find ./RelationalAI/bin/Release -type f -name "RelationalAI.*.nupkg" -printf "-a %p ") -m "" "$tag_name"
+
+    - name: Install gpr tool
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      run: dotnet tool install gpr -g
+
+    - name: Push generated package to GitHub registry
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      run: |
+        for f in RelationalAI/bin/Release/*.nupkg
+        do
+          gpr push $f -k ${{ secrets.GITHUB_TOKEN }}
+        done
+      shell: bash
+
+    # Publish
+    - name: Publish Nuget Package to Nuget.org
+      if: ${{ !contains(fromJson(steps.fetch_all_releases.outputs.all_releases).*.tag_name, steps.fetch_current_version.outputs.current_version) }}
+      id: publish_nuget
+      uses: rohith/publish-nuget@v2
+      with:
+        # Filepath of the project to be packaged, relative to root of repository
+        PROJECT_FILE_PATH: RelationalAI/RelationalAI.csproj
+
+        # NuGet package id, used for version detection & defaults to project name
+        # PACKAGE_NAME: RelationalAI
+
+        # Filepath with version info, relative to root of repository & defaults to PROJECT_FILE_PATH
+        # VERSION_FILE_PATH: RelationalAI/RelationalAI.csproj
+
+        # Regex pattern to extract version info in a capturing group
+        # VERSION_REGEX: ^\s*<Version>(.*)<\/Version>\s*$
+
+        # Flag to toggle git tagging, enabled by default
+        TAG_COMMIT: false
+
+        # Format of the git tag, [*] gets replaced with actual version
+        # TAG_FORMAT: v*
+
+        # API key to authenticate with NuGet server
+        NUGET_KEY: ${{secrets.NUGET_KEY}}
+
+        # NuGet server uri hosting the packages, defaults to https://api.nuget.org
+        # NUGET_SOURCE: https://api.nuget.org
+
+        # Flag to toggle pushing symbols along with nuget package to the server, disabled by default
+        INCLUDE_SYMBOLS: true
