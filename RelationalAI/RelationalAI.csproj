@@ -11,8 +11,8 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <RepositoryUrl>https://github.com/RelationalAI-oss/RelationalAICSharpClient</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/RelationalAI-oss/RelationalAICSharpClient</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/RelationalAI-oss/relationalai-sdk-csharp</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/RelationalAI-oss/relationalai-sdk-csharp</PackageProjectUrl>
     <Description>
         This is the RelationalAI C# client SDK and you can use it to connect to the RelationalAI infrastructure.
     </Description>
