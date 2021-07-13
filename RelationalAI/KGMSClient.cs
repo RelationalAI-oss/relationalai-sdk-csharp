@@ -22,7 +22,7 @@ namespace Com.RelationalAI
 
         public const string JSON_CONTENT_TYPE = "application/json";
         public const string CSV_CONTENT_TYPE = "text/csv";
-        public const string USER_AGENT_HEADER = "KGMSClient/1.2.0/csharp";
+        public const string USER_AGENT_HEADER = "KGMSClient/1.2.1/csharp";
 
         public int DebugLevel = Connection.DEFAULT_DEBUG_LEVEL;
 

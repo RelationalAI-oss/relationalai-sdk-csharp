@@ -2,7 +2,7 @@
 
 This is a Client SDK for RelationalAI
 
-- API version: 1.2.0
+- API version: 1.2.1
 
 ## Frameworks supported
 
