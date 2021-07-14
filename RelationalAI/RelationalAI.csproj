@@ -4,7 +4,7 @@
     <Version>1.2.1</Version>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>RelationalAI</PackageId>
-    <Authors>Mohammad Dashti and Helmi Nour</Authors>
+    <Authors>RelationalAI</Authors>
     <Company>RelationalAI</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
