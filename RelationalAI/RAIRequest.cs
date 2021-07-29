@@ -61,7 +61,8 @@ namespace Com.RelationalAI
 
         public void Sign(DateTime t, string[] includeHeaders = null, int debugLevel=1) {
             if(includeHeaders == null) {
-                includeHeaders = new string[]{"host", "content-type", "x-rai-date"};
+                //Adding a new header content-encoding for signature purposes.
+                includeHeaders = new string[]{"host", "content-type", "x-rai-date", "content-encoding"};
             }
             if(this.Creds == null) return;
 

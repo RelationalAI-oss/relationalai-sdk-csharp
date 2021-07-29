@@ -22,7 +22,7 @@ namespace Com.RelationalAI
 
         public const string JSON_CONTENT_TYPE = "application/json";
         public const string CSV_CONTENT_TYPE = "text/csv";
-        public const string USER_AGENT_HEADER = "KGMSClient/1.2.1/csharp";
+        public const string USER_AGENT_HEADER = "KGMSClient/1.2.2/csharp";
 
         public int DebugLevel = Connection.DEFAULT_DEBUG_LEVEL;
 
@@ -53,14 +53,25 @@ namespace Com.RelationalAI
             }
             if(conn is CloudConnection) {
                 query["compute_name"] = conn.ComputeName;
+                // Note:
+                // We need to send the gzip content encoding header and a gzip compressed body only in case of a CloudConnection.
+                // Local rai-server cannot handle gzip encoding, only infra server support does.
+        
+                // Compress the contents (request body) as gzipped byte array. C# httpclient does not implicitly compress the content over the wire 
+                // if content encoding is gzip; we need to manually compress the body.
+                // Note: If the client sends content-encoding as gzip but does not encode the content to gzip, then the server will return 400 Bad Request. 
+                request.Content = CompressionUtils.CompressRequestContentAsGzip(request.Content);
+                //Set the content encoding type header as gzip. It will tell the server that the content is gzip encoded.
+                request.Content.Headers.Add("content-encoding", "gzip");
             }
             uriBuilder.Query = query.ToString();
             request.RequestUri = uriBuilder.Uri;
 
             // populate headers
             request.Headers.Host = request.RequestUri.Host;
+            //Set the content type header
             request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
-
+            
             // sign request here
             var raiRequest = new RAIRequest(request, conn);
             raiRequest.Sign(debugLevel: DebugLevel);

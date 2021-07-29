@@ -5,6 +5,9 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
 
 namespace Com.RelationalAI
 {
@@ -168,6 +171,38 @@ namespace Com.RelationalAI
             }
 
             return stringBuilder.ToString();
+        }
+    }
+
+    public static class CompressionUtils{
+        /**
+            This function will take HttpContent object and then perform the following
+            - Initialize a memory stream and copy the contents as bytes into it; called the Content Stream.
+            - Initialize a gzip stream with a compressed stream.
+            - Compress the content stream as bytes using gzip and copy it to the Compressed Stream.
+            - Return the HttpContent with compressed stream as bytes 
+        */ 
+        public static HttpContent CompressRequestContentAsGzip(HttpContent content)
+        {
+            //Initialize a memory stream to hold the compressed contents.
+            var compressedStream = new MemoryStream();
+
+            //Read bytes from HttpContent into byte array
+            byte[] byteArray = content.ReadAsByteArrayAsync().Result;
+            //Initialize a memory stream with byte array content to compress it.
+            using (var contentStream = new MemoryStream(byteArray))
+            {
+                //Initialize the gzip stream and feed compressed stream to copy the compressed contents.
+                using (var gzipStream = new GZipStream(compressedStream, System.IO.Compression.CompressionMode.Compress))
+                {
+                    //Copy the contents to gzip stream. Gzip stream will compress and copy them to the compressed stream that we fed earlier. 
+                    contentStream.CopyTo(gzipStream);
+                }
+            }
+            //Make the HttpContent as byte array content
+            var httpContent = new ByteArrayContent(compressedStream.ToArray());
+            //Return the byte array content.
+            return httpContent;
         }
     }
 }
