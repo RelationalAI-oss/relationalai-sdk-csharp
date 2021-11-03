@@ -1,11 +1,8 @@
 using System;
-using System.IO;
 using System.Net.Http;
 using System.ComponentModel;
-using System.Reflection;
 using NSec.Cryptography;
 using System.Linq;
-using System.Collections.Generic;
 using System.Text;
 using System.Web;
 
@@ -24,11 +21,14 @@ namespace Com.RelationalAI
     public class RAIRequest {
         public const string DEFAULT_SERVICE = "transaction";
 
+        public const string DEFAULT_HOST = "localhost";
         public RAICredentials Creds { get; }
         // verb, url, headers, content
         public HttpRequestMessage InnerReq { get; }
         public RAIRegion Region { get; }
         public string Service { get; }
+
+        public string Host { get; }
 
         public RAIRequest(
             HttpRequestMessage innerReq,
@@ -38,7 +38,8 @@ namespace Com.RelationalAI
             innerReq,
             (conn is CloudConnection || conn is ManagementConnection) ? conn.Creds : null,
             (conn is CloudConnection || conn is ManagementConnection) ? conn.Region : Connection.DEFAULT_REGION,
-            service)
+            service,
+            (conn is CloudConnection || conn is ManagementConnection) ? conn.Host : null)
         {
         }
 
@@ -46,19 +47,41 @@ namespace Com.RelationalAI
             HttpRequestMessage innerReq,
             RAICredentials creds = null,
             RAIRegion region = Connection.DEFAULT_REGION,
-            string service = DEFAULT_SERVICE
+            string service = DEFAULT_SERVICE,
+            string host = DEFAULT_HOST
         )
         {
             this.Creds = creds;
             this.InnerReq = innerReq;
             this.Region = region;
             this.Service = service;
+            this.Host = host;
         }
 
+
+        public void SetAuth(){
+            if(this.Creds == null) return;
+            if(this.Creds.AuthType == AuthType.ACCESS_KEY)
+            {
+                Sign();
+            }
+            else
+            {
+                SetAccessToken();
+            }
+        }        
         public void Sign(string[] includeHeaders = null, int debugLevel=1) {
             Sign(DateTime.UtcNow, includeHeaders, debugLevel);
         }
+        
 
+        /// <summary> Gets the access token using <c>ClientCredentialsService</c>. </summary>
+        private void SetAccessToken()
+        {
+            string accessToken = ClientCredentialsService.Instance.GetAccessToken(Creds, Host);
+            InnerReq.Headers.TryAddWithoutValidation("Authorization", String.Format("Bearer {0}", accessToken));   
+        }
+    
         public void Sign(DateTime t, string[] includeHeaders = null, int debugLevel=1) {
             if(includeHeaders == null) {
                 //Adding a new header content-encoding for signature purposes.
@@ -185,5 +208,6 @@ namespace Com.RelationalAI
 
             InnerReq.Headers.TryAddWithoutValidation("Authorization", authHeader);
         }
+    
     }
 }

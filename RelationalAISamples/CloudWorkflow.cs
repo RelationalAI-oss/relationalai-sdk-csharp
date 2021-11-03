@@ -78,6 +78,8 @@ namespace RelationalAISamples
                 Console.WriteLine(JObject.FromObject(c));
             }
 
+            var isCompute = false;
+
             // list databases for the current account
             /* Expected output: {
             "databases": [
@@ -127,98 +129,118 @@ namespace RelationalAISamples
 
             // create compute
             var compute = GetComputeByName(this.MngtConn, this.ComputeName);
-            if (compute == null)
-            {
-                var createComputeResponse = this.MngtConn.CreateCompute(computeName: ComputeName, size: RAIComputeSize.XS);
-                this.ComputeId = createComputeResponse.Id;
-                Console.WriteLine("=> Create compute response: " + JObject.FromObject(createComputeResponse).ToString());
-            } else
-            {
-                this.ComputeId = compute.Id;
-                Console.WriteLine($"==> Compute {this.ComputeName} is used.");
+            
+            try {
+                if (compute == null)
+                {
+                    var createComputeResponse = this.MngtConn.CreateCompute(computeName: ComputeName, size: RAIComputeSize.XS);
+                    isCompute = true;
+                    this.ComputeId = createComputeResponse.Id;
+                    Console.WriteLine("=> Create compute response: " + JObject.FromObject(createComputeResponse).ToString());
+                } else
+                {
+                    this.ComputeId = compute.Id;
+                    Console.WriteLine($"==> Compute {this.ComputeName} is used.");
+                }
+
+                // wait for compute to be provisioned
+                // a compute is a single tenant VM used for the current account (provisioning time ~ 5 mins)
+                if(!WaitForCompute(this.MngtConn, this.ComputeName))
+                    return;
+
+                // create database with the name as specificied in the MngtConnection
+                this.CloudConn.CreateDatabase(overwrite: true);
+
+                this.CloudConn.LoadCSV(
+                    // import data into edge_csv relation
+                    rel: "edge_csv",
+                    // data type mapping
+                    schema: new CSVFileSchema("Int64", "Int64"),
+                    syntax: new CSVFileSyntax(header: new List<string>() { "src", "dest" }, delim: "|"),
+                    // data imported over the wire
+                    // alternative options are to specify a datasource that is a path for an azure blob storage file
+                    data: @"
+                            30|31
+                            33|30
+                            32|31
+                            34|35
+                            35|32
+                        "
+                );
+
+                // persisting vertex and edges for future computations
+                var edges = this.CloudConn.Query(
+                    srcStr: @"
+                        def vertex(id) = exists(pos: edge_csv(pos, :src, id) or edge_csv(pos, :dest, id))
+                        def edge(a, b) = exists(pos: edge_csv(pos, :src, a) and edge_csv(pos, :dest, b))
+                    ",
+                    persist: new List<string>() { "vertex", "edge" },
+                    // this the result of the query
+                    output: "edge"
+                );
+
+                Console.WriteLine("==> Query output: " + JObject.FromObject(edges).ToString());
+
+                // Jaccard Similarity query
+                string queryString = @"
+                    def uedge(a, b) = edge(a, b) or edge(b, a)
+                    def tmp(a, b, x) = uedge(x,a) and uedge(x,b) and a > b
+                    def jaccard_similarity(a,b,v) = (count[x : tmp(a,b,x)] / count[x: (uedge(a, x) or uedge(b, x)) and tmp(a,b,_)])(v)
+
+                    def result = jaccard_similarity
+                ";
+
+                var queryResult = this.CloudConn.Query(
+                    srcStr: queryString,
+                    // query output
+                    output: "result"
+                );
+
+                Console.WriteLine("=> Jaccard Similarity query result: " + JObject.FromObject(queryResult).ToString());
+
+                var events = this.MngtConn.ListComputeEvents(this.ComputeId);
+                foreach(var e in events) {
+                    Console.WriteLine("=> Compute event: " + JObject.FromObject(e).ToString());
+                }
+
+                var usage = this.MngtConn.GetAccountCreditUsage();
+                Console.WriteLine("=> Account Credit Usage: " + JObject.FromObject(usage).ToString());
+
+
+                Console.WriteLine($"Press 'Y' to destroy {this.ComputeName}");
+                ConsoleKeyInfo cki = Console.ReadKey();
+
+                if (cki.Key.ToString() == "Y")
+                {
+                    CleanCompute();
+                }
+                else 
+                { 
+                    Console.WriteLine("Nothing to do."); 
+                }
             }
 
-            // wait for compute to be provisioned
-            // a compute is a single tenant VM used for the current account (provisioning time ~ 5 mins)
-            if(!WaitForCompute(this.MngtConn, this.ComputeName))
-                return;
-
-            // create database with the name as specificied in the MngtConnection
-            this.CloudConn.CreateDatabase(overwrite: true);
-
-            this.CloudConn.LoadCSV(
-                // import data into edge_csv relation
-                rel: "edge_csv",
-                // data type mapping
-                schema: new CSVFileSchema("Int64", "Int64"),
-                syntax: new CSVFileSyntax(header: new List<string>() { "src", "dest" }, delim: "|"),
-                // data imported over the wire
-                // alternative options are to specify a datasource that is a path for an azure blob storage file
-                data: @"
-                        30|31
-                        33|30
-                        32|31
-                        34|35
-                        35|32
-                    "
-            );
-
-            // persisting vertex and edges for future computations
-            var edges = this.CloudConn.Query(
-                srcStr: @"
-                    def vertex(id) = exists(pos: edge_csv(pos, :src, id) or edge_csv(pos, :dest, id))
-                    def edge(a, b) = exists(pos: edge_csv(pos, :src, a) and edge_csv(pos, :dest, b))
-                ",
-                persist: new List<string>() { "vertex", "edge" },
-                // this the result of the query
-                output: "edge"
-            );
-
-            Console.WriteLine("==> Query output: " + JObject.FromObject(edges).ToString());
-
-            // Jaccard Similarity query
-            string queryString = @"
-                def uedge(a, b) = edge(a, b) or edge(b, a)
-                def tmp(a, b, x) = uedge(x,a) and uedge(x,b) and a > b
-                def jaccard_similarity(a,b,v) = (count[x : tmp(a,b,x)] / count[x: (uedge(a, x) or uedge(b, x)) and tmp(a,b,_)])(v)
-
-                def result = jaccard_similarity
-            ";
-
-            var queryResult = this.CloudConn.Query(
-                srcStr: queryString,
-                // query output
-                output: "result"
-            );
-
-            Console.WriteLine("=> Jaccard Similarity query result: " + JObject.FromObject(queryResult).ToString());
-
-            var events = this.MngtConn.ListComputeEvents(this.ComputeId);
-            foreach(var e in events) {
-                Console.WriteLine("=> Compute event: " + JObject.FromObject(e).ToString());
+            catch (Exception ex){
+                Console.WriteLine (ex);
+                // Delete the compute if there is any exception after creating it.
+                if (isCompute) 
+                {
+                    CleanCompute();
+                }
             }
-
-            var usage = this.MngtConn.GetAccountCreditUsage();
-            Console.WriteLine("=> Account Credit Usage: " + JObject.FromObject(usage).ToString());
-
-
-            Console.WriteLine($"Press 'Y' to destroy {this.ComputeName}");
-            ConsoleKeyInfo cki = Console.ReadKey();
-
-            if (cki.Key.ToString() == "Y")
-            {
-                // remove default compute (disassociate database from compute)
-                this.MngtConn.RemoveDefaultCompute(dbname: this.ComputeName);
-
-                // delete compute => stop charging for the compute
-                this.MngtConn.DeleteCompute(computeName: ComputeName);
-            }else { Console.WriteLine("Nothing to do."); }
         }
 
         /*
          * Helpers
          *
          */
+         private void CleanCompute() {
+            // remove default compute (disassociate database from compute)
+            this.MngtConn.RemoveDefaultCompute(dbname: this.ComputeName);
+
+            // delete compute => stop charging for the compute
+            this.MngtConn.DeleteCompute(computeName: ComputeName);
+         }
 
         private bool WaitForCompute(ManagementConnection connection, string computeName)
         {

@@ -67,7 +67,7 @@ namespace Com.RelationalAI
             request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
             RAIRequest raiReq = new RAIRequest(request, conn);
-            raiReq.Sign();
+            raiReq.SetAuth();
             KGMSClient.AddExtraHeaders(request);
         }
     }
@@ -86,6 +86,7 @@ namespace Com.RelationalAI
             this.conn = conn;
             this.conn.CloudClient = this;
             this.BaseUrl = conn.BaseUrl.ToString();
+            System.AppDomain.CurrentDomain.UnhandledException += GlobalExceptionHandler;
         }
 
         public ICollection<ComputeInfoProtocol> ListComputes(RAIComputeFilters filters = null)
@@ -181,6 +182,26 @@ namespace Com.RelationalAI
         public GetAccountCreditsResponse GetAccountCreditUsage(Period period=Period.Current_month)
         {
             return this.AccountCreditsGetAsync(period).Result;
+        }
+
+         ///<summary> This global exception handler will be invoked in case of any exception.
+         /// It can be used for multiple purposes, like logging. But, currently it is being
+         /// used to invalidate the Client Credentials Cache.
+         /// </summary>
+         private void GlobalExceptionHandler(object sender, UnhandledExceptionEventArgs e) {
+            if (e.ExceptionObject is Exception)
+            {
+                Exception exception = (Exception)e.ExceptionObject;
+                if(exception.InnerException is ApiException 
+                    && conn.Creds.AuthType == AuthType.CLIENT_CREDENTIALS) 
+                {
+                   ApiException apiException = (ApiException)exception.InnerException;
+                   if(apiException.StatusCode == 400 || apiException.StatusCode == 401)
+                   {
+                       ClientCredentialsService.Instance.InvalidateCache(conn.Creds, conn.Host);
+                   }     
+                }
+            }
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -22,7 +21,7 @@ namespace Com.RelationalAI
 
         public const string JSON_CONTENT_TYPE = "application/json";
         public const string CSV_CONTENT_TYPE = "text/csv";
-        public const string USER_AGENT_HEADER = "KGMSClient/1.2.2/csharp";
+        public const string USER_AGENT_HEADER = "KGMSClient/1.2.3/csharp";
 
         public int DebugLevel = Connection.DEFAULT_DEBUG_LEVEL;
 
@@ -72,9 +71,9 @@ namespace Com.RelationalAI
             //Set the content type header
             request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             
-            // sign request here
+            // Set Auth here
             var raiRequest = new RAIRequest(request, conn);
-            raiRequest.Sign(debugLevel: DebugLevel);
+            raiRequest.SetAuth();
             KGMSClient.AddExtraHeaders(request);
 
             // use HTTP 2.0 (to handle keep-alive)

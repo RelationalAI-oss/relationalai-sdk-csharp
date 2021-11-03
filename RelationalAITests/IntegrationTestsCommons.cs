@@ -281,12 +281,13 @@ namespace Com.RelationalAI
             // =============================================================================
             conn = connFunc();
             conn.CreateDatabase(overwrite: true);
+            var initial_count = conn.ListEdb().Count;
             Assert.True(conn.LoadJSON("json",
                 data: @"
                     { ""address"": { ""city"": ""Vancouver"", ""state"": ""BC"" } }
                 "
             ));
-            Assert.AreEqual(conn.ListEdb().Count, 2);
+            Assert.AreEqual(conn.ListEdb().Count, (initial_count+2));
             queryResEquals(conn.Query(
                 srcStr: @"
                     def cityRes(x) = exists(pos: json(:address, :city, x))
@@ -299,13 +300,13 @@ namespace Com.RelationalAI
                     { ""name"": ""Martin"", ""height"": 185.5 }
                 "
             ));
-            Assert.AreEqual(conn.ListEdb().Count, 4);
+            Assert.AreEqual(conn.ListEdb().Count, (initial_count+4));
 
             // list_edb
             // =============================================================================
             conn = connFunc();
             conn.CreateDatabase(overwrite: true);
-            Assert.AreEqual(conn.ListEdb().Count, 0);// list_edb
+            Assert.AreEqual(conn.ListEdb().Count, initial_count);// list_edb
 
             // enable_library
             // =============================================================================
