@@ -17,6 +17,7 @@ namespace Com.RelationalAI
         public const bool DEFAULT_VERIFY_SSL = true;
         public const int DEFAULT_DEBUG_LEVEL = 0;
         public const int DEFAULT_CONNECTION_TIMEOUT = 300; // seconds
+        public const IDictionary<String, String> DEFAULT_EXTRA_HEADERS = null;
 
         public virtual string DbName => throw new InvalidOperationException();
 
@@ -45,6 +46,8 @@ namespace Com.RelationalAI
         }
 
         public int ConnectionTimeout { get; set; }
+
+        public IDictionary<String, String> ExtraHeaders { get; set; }
 
         public KGMSClient Client { get; set; }
         public ManagementClient CloudClient { get; set; }
@@ -79,7 +82,8 @@ namespace Com.RelationalAI
             string scheme = DEFAULT_SCHEME,
             string host = DEFAULT_HOST,
             int port = DEFAULT_PORT,
-            int connectionTimeout = DEFAULT_CONNECTION_TIMEOUT
+            int connectionTimeout = DEFAULT_CONNECTION_TIMEOUT,
+            IDictionary<String, String> extraHeaders = DEFAULT_EXTRA_HEADERS
         )
         {
             this.DbName = dbname;
@@ -88,6 +92,7 @@ namespace Com.RelationalAI
             this.Host = host;
             this.Port = port;
             this.ConnectionTimeout = connectionTimeout;
+            this.ExtraHeaders = extraHeaders == null ? new Dictionary<String, String>() : extraHeaders;
 
             if(this.GetType() == typeof(LocalConnection))
             {

@@ -9,7 +9,7 @@ let
 in
 stdenv.mkDerivation rec {
   name = "rai-server-csharp-client-sdk-${version}";
-  version = "1.2.3";
+  version = "1.2.4";
   buildInputs = [
     raiserverBinary
     dotnet-sdk_3

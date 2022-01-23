@@ -21,7 +21,7 @@ namespace Com.RelationalAI
 
         public const string JSON_CONTENT_TYPE = "application/json";
         public const string CSV_CONTENT_TYPE = "text/csv";
-        public const string USER_AGENT_HEADER = "KGMSClient/1.2.3/csharp";
+        public const string USER_AGENT_HEADER = "KGMSClient/1.2.4/csharp";
 
         public int DebugLevel = Connection.DEFAULT_DEBUG_LEVEL;
 
@@ -55,10 +55,10 @@ namespace Com.RelationalAI
                 // Note:
                 // We need to send the gzip content encoding header and a gzip compressed body only in case of a CloudConnection.
                 // Local rai-server cannot handle gzip encoding, only infra server support does.
-        
-                // Compress the contents (request body) as gzipped byte array. C# httpclient does not implicitly compress the content over the wire 
+
+                // Compress the contents (request body) as gzipped byte array. C# httpclient does not implicitly compress the content over the wire
                 // if content encoding is gzip; we need to manually compress the body.
-                // Note: If the client sends content-encoding as gzip but does not encode the content to gzip, then the server will return 400 Bad Request. 
+                // Note: If the client sends content-encoding as gzip but does not encode the content to gzip, then the server will return 400 Bad Request.
                 request.Content = CompressionUtils.CompressRequestContentAsGzip(request.Content);
                 //Set the content encoding type header as gzip. It will tell the server that the content is gzip encoded.
                 request.Content.Headers.Add("content-encoding", "gzip");
@@ -70,7 +70,7 @@ namespace Com.RelationalAI
             request.Headers.Host = request.RequestUri.Host;
             //Set the content type header
             request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
-            
+
             // Set Auth here
             var raiRequest = new RAIRequest(request, conn);
             raiRequest.SetAuth();
@@ -85,7 +85,7 @@ namespace Com.RelationalAI
                 AsyncLocalKeepAliveCancellationTokenSource.Value = tokenSource;
                 CancellationToken ct = tokenSource.Token;
 
-                /** 
+                /**
                  * TODO: currently we swallo exceptions in KeepClientAlive.
                  * If we want to throw, then we need to change this to asynchronously handle the throw
                  * e.g.
@@ -347,6 +347,7 @@ namespace Com.RelationalAI
     public class KGMSClient : GeneratedRelationalAIClient
     {
         public static ILogger DefaultLogger = new ConsoleLogger();
+        public static IDictionary<String, String> extraHeaders = new Dictionary<String, String>();
 
         public ILogger Logger
         {
@@ -366,7 +367,7 @@ namespace Com.RelationalAI
                 try {
                     await Task.Run(() => this.KeepAliveProbe(client_, ct));
                 } catch (Exception e) {
-                    // ignore. But I think we might want to throw? 
+                    // ignore. But I think we might want to throw?
                     Logger.Error("KeepAliveProbe failed with exception: " + e.Message);
                 }
             }
@@ -400,6 +401,11 @@ namespace Com.RelationalAI
         {
             // host & content-type header for signature verification, more headers here
             request.Headers.UserAgent.TryParseAdd(USER_AGENT_HEADER);
+            // add extra headers
+            foreach(var item in extraHeaders)
+            {
+                request.Headers.Add(item.Key, item.Value);
+            }
         }
 
         private static bool httpClientVerifySSL = Connection.DEFAULT_VERIFY_SSL;
@@ -434,6 +440,7 @@ namespace Com.RelationalAI
         public KGMSClient(Connection conn) : base(KGMSClient.GetHttpClient(conn.BaseUrl, conn.VerifySSL, conn.ConnectionTimeout))
         {
             this.conn = conn;
+            extraHeaders = conn.ExtraHeaders;
             conn.Client = this;
             this.BaseUrl = conn.BaseUrl.ToString();
         }
@@ -479,22 +486,8 @@ namespace Com.RelationalAI
             xact.Actions = new List<LabeledAction>();
             xact.Actions.Add(labeledAction);
             xact.Readonly = isReadOnly;
-            xact.Version = this.conn.Version;
 
             TransactionResult response = RunTransaction(xact);
-
-            // Sync the reported database version to our local
-            // connection version. Important, as we want to ensure
-            // that in subsequent transactions this will be the
-            // minimum required version of the database. Note that
-            // only write transactions bump the version.
-            lock(this.conn) {
-                int currentVersion = conn.Version;
-                int responseVersion = response.Version.GetValueOrDefault(0);
-                if(responseVersion > currentVersion) {
-                    conn.Version = responseVersion;
-                }
-            }
 
             success = IsSuccess(response);
             foreach (LabeledActionResult act in response.Actions)
@@ -521,7 +514,6 @@ namespace Com.RelationalAI
             xact.Actions = new LinkedList<LabeledAction>();
             xact.Source_dbname = sourceDbname;
             xact.Readonly = false;
-            xact.Version = this.conn.Version;
             TransactionResult response = RunTransaction(xact);
 
             if(response.Problems.Count > 0) {
@@ -538,7 +530,6 @@ namespace Com.RelationalAI
             xact.Dbname = conn.DbName;
             xact.Actions = new LinkedList<LabeledAction>();
             xact.Readonly = false;
-            xact.Version = this.conn.Version;
 
             TransactionResult response = RunTransaction(xact);
 
