@@ -10,9 +10,12 @@ namespace RelationalAISamples
         public void runLocalWorkflow()
         {
             string dbname = "localcsharpdatabase";
-            LocalConnection conn = new LocalConnection(dbname);
 
-            new KGMSClient(conn);
+            IDictionary<String, String> extraHeaders = new Dictionary<String, String>();
+            extraHeaders.Add("header-1", "value-1");
+            extraHeaders.Add("header-2", "value-2");
+
+            LocalConnection conn = new LocalConnection(dbname, extraHeaders: extraHeaders);
 
             conn.CreateDatabase(true);
 
@@ -53,7 +56,7 @@ namespace RelationalAISamples
             );
 
             Console.WriteLine("==> Jaccard Similarity: " + JObject.FromObject(queryResult).ToString());
-
+            conn.CloseDatabase();
         }
     }
 }

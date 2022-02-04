@@ -364,6 +364,12 @@ namespace Com.RelationalAI
             return Client.EnableLibrary(srcName);
         }
 
+        public bool CloseDatabase()
+        {
+            SetConnectionOnClients();
+            return Client.CloseDatabase();
+        }
+
         public ICollection<Relation> Cardinality(string relName = null)
         {
             SetConnectionOnClients();
