@@ -31,8 +31,7 @@ public sealed class HttpClientFactory
         if( verifySSL ) {
             var handler = new SocketsHttpHandler()
             {
-                // uncomment this to enable keep-alive after moving to netcore5
-                // ConnectCallback = s_defaultConnectCallback,
+                ConnectCallback = s_defaultConnectCallback,
             };
             HttpClient httpClient = new HttpClient(handler);
             httpClient.Timeout = TimeSpan.FromSeconds(timeout);
@@ -49,8 +48,7 @@ public sealed class HttpClientFactory
             };
             var handler = new SocketsHttpHandler()
             {
-                // uncomment this to enable keep-alive after moving to netcore5
-                // ConnectCallback = s_defaultConnectCallback,
+                ConnectCallback = s_defaultConnectCallback,
                 SslOptions = sslOptions
             };
             HttpClient httpClient = new HttpClient(handler);
@@ -121,8 +119,7 @@ public sealed class HttpClientFactory
         return socket;
     }
 
-    /*
-    // uncomment this block to enable keep-alive after moving to netcore5
+    
     private static async ValueTask<Stream> DefaultConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
     {
         // `Socket.SetSocketOption` function fails if a `DnsEndPoint` is passed, as it
@@ -146,7 +143,7 @@ public sealed class HttpClientFactory
         }
     }
     private static readonly Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> s_defaultConnectCallback = DefaultConnectAsync;
-    */
+    
 
     private async static ValueTask<IPEndPoint> getIPEndPoint(DnsEndPoint dnsEndPoint)
     {

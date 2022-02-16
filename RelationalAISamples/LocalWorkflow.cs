@@ -56,7 +56,7 @@ namespace RelationalAISamples
             );
 
             Console.WriteLine("==> Jaccard Similarity: " + JObject.FromObject(queryResult).ToString());
-            conn.CloseDatabase();
+
         }
     }
 }

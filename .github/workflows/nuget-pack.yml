@@ -18,7 +18,7 @@ jobs:
     - name: Setup .NET Core # required by the `gpr` tool
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.301
+        dotnet-version: 5.0.405
 
     # - name: Setup .NET Core # required by ClientSDK
     #   uses: actions/setup-dotnet@v1

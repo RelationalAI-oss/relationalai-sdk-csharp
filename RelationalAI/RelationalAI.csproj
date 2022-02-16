@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.2.5</Version>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Version>1.2.6</Version>
+    <TargetFramework>net5.0</TargetFramework>
     <PackageId>RelationalAI</PackageId>
     <Authors>RelationalAI</Authors>
     <Company>RelationalAI</Company>

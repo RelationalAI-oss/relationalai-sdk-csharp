@@ -842,9 +842,6 @@ namespace Com.RelationalAI
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.1.24.0 (Newtonsoft.Json v12.0.0.0)")]
     public partial class ModifyWorkspaceAction : Action
     {
-        [Newtonsoft.Json.JsonProperty("close_database", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string Close_database { get; set; }
-    
         [Newtonsoft.Json.JsonProperty("delete_edb", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Delete_edb { get; set; }
     

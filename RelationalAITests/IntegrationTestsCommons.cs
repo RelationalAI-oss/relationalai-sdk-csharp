@@ -314,12 +314,6 @@ namespace Com.RelationalAI
             conn.CreateDatabase(overwrite: true);
             Assert.True(conn.EnableLibrary("stdlib"));
 
-            // close_database
-            // =============================================================================
-            conn = connFunc();
-            conn.CreateDatabase(overwrite: true);
-            Assert.True(conn.CloseDatabase());
-
             // cardinality
             // =============================================================================
             conn = connFunc();

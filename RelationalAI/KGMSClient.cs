@@ -21,7 +21,7 @@ namespace Com.RelationalAI
 
         public const string JSON_CONTENT_TYPE = "application/json";
         public const string CSV_CONTENT_TYPE = "text/csv";
-        public const string USER_AGENT_HEADER = "KGMSClient/1.2.5/csharp";
+        public const string USER_AGENT_HEADER = "KGMSClient/1.2.1/csharp";
 
         public int DebugLevel = Connection.DEFAULT_DEBUG_LEVEL;
 
@@ -78,25 +78,6 @@ namespace Com.RelationalAI
 
             // use HTTP 2.0 (to handle keep-alive)
             request.Version =  System.Net.HttpVersion.Version20;
-
-            // have a separate keep-alive task (per thread)
-            if(!isStatusRequest(body)) {
-                var tokenSource = new CancellationTokenSource();
-                AsyncLocalKeepAliveCancellationTokenSource.Value = tokenSource;
-                CancellationToken ct = tokenSource.Token;
-
-                /**
-                 * TODO: currently we swallo exceptions in KeepClientAlive.
-                 * If we want to throw, then we need to change this to asynchronously handle the throw
-                 * e.g.
-                 * try {
-                     await this.KeepClientAlive(client, url, ct).ConfigureAwait(false);
-                 } catch (Exception e) {
-                     // Handle here
-                 }
-                 **/
-                var keep_alive_task = this.KeepClientAlive(client, url, ct).ConfigureAwait(false);
-            }
         }
 
         private bool isStatusRequest(Transaction txn)
@@ -126,11 +107,6 @@ namespace Com.RelationalAI
         private bool _isEmpty(string str)
         {
             return str == null || str.Length == 0;
-        }
-
-        public virtual Task KeepClientAlive(HttpClient client_, String url, CancellationToken ct)
-        {
-            throw new NotImplementedException();
         }
     }
 
@@ -356,46 +332,6 @@ namespace Com.RelationalAI
         }
         private ILogger _logger;
 
-        public override async Task KeepClientAlive(HttpClient client_, String url, CancellationToken ct)
-        {
-            while (true)
-            {
-                ct.ThrowIfCancellationRequested();
-                await Task.Delay(HttpClientFactory.KEEP_ALIVE_INTERVAL*1000);
-                ct.ThrowIfCancellationRequested();
-
-                try {
-                    await Task.Run(() => this.KeepAliveProbe(client_, ct));
-                } catch (Exception e) {
-                    // ignore. But I think we might want to throw?
-                    Logger.Error("KeepAliveProbe failed with exception: " + e.Message);
-                }
-            }
-        }
-
-        private async void KeepAliveProbe(HttpClient client_, CancellationToken ct)
-        {
-            // Send "HEAD / HTTP/2" request.
-            var request = new System.Net.Http.HttpRequestMessage();
-            request.Method = new System.Net.Http.HttpMethod("HEAD");
-            request.RequestUri = new System.Uri(this.BaseUrl, System.UriKind.RelativeOrAbsolute);
-            request.Version =  System.Net.HttpVersion.Version20;
-
-            var keepaliveFailureCnt = 0;
-            try {
-                await client_.SendAsync(request, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-            } catch (Exception e) {
-                keepaliveFailureCnt++;
-                // KEEP_ALIVE_RETRIES may be too big here (16) for the interval of 3 minutes
-                if ( keepaliveFailureCnt < HttpClientFactory.KEEP_ALIVE_RETRIES ) {
-                    Logger.Warning("KeepAliveProbe failed to send request: " + e.Message);
-                } else {
-                    Logger.Error("KeepAliveProbe failed to send request: "  + e.Message);
-                    Logger.Error("KeepAliveProbe retry exceeded max. Throwing");
-                    throw e;
-                }
-           }
-        }
 
         public static void AddExtraHeaders(HttpRequestMessage request)
         {
@@ -957,13 +893,6 @@ namespace Com.RelationalAI
             var action = new ModifyWorkspaceAction();
             action.Enable_library = srcName;
             return RunAction(action) != null;
-        }
-
-        public bool CloseDatabase()
-        {
-            var action = new ModifyWorkspaceAction();
-            action.Close_database = conn.DbName;
-            return RunAction(action, isReadOnly: true) != null;
         }
 
         public ICollection<Relation> Cardinality(string relName = null)

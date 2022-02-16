@@ -69,6 +69,7 @@ namespace Com.RelationalAI
                 "Credential=e3536f8d-cbc6-4ed8-9de6-74cf4cb724a1/20200504/us-east/database+list/rai01_request, " +
                 "SignedHeaders=content-type;host;x-rai-date, " +
                 "Signature=77d211417454ded42dc931d25c57af6cab6cbc70f75bef4c849d37585188d659158c8c944eab866e3147bbcde21257ae0a1dfece3c0f3f43a838b3f9524e0f0a\n" +
+                "content-length: 2\n" +
                 "content-type: application/json\n" +
                 "host: 127.0.0.1\n" +
                 "x-rai-date: 20200504T103600Z\n";
