@@ -2,12 +2,12 @@
 
 This is a Client SDK for RelationalAI
 
-- API version: 1.2.6
+- API version: 1.2.7
 
 ## Frameworks supported
 
 
-- .NET Core 3.1+
+- .NET Core 5.0+
 
 ## Dependencies
 

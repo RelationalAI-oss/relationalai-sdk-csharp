@@ -104,6 +104,12 @@ namespace Com.RelationalAI
             conn.CreateDatabase(overwrite: true);
             Assert.True(conn.DeleteSource("stdlib"));
 
+            // close_database
+            // =============================================================================
+            conn = connFunc();
+            conn.CreateDatabase(overwrite: true);
+            Assert.True(conn.CloseDatabase());
+
             // list_source
             // =============================================================================
             conn = connFunc();

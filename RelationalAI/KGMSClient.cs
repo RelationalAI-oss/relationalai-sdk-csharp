@@ -21,7 +21,7 @@ namespace Com.RelationalAI
 
         public const string JSON_CONTENT_TYPE = "application/json";
         public const string CSV_CONTENT_TYPE = "text/csv";
-        public const string USER_AGENT_HEADER = "KGMSClient/1.2.1/csharp";
+        public const string USER_AGENT_HEADER = "KGMSClient/1.2.7/csharp";
 
         public int DebugLevel = Connection.DEFAULT_DEBUG_LEVEL;
 
@@ -893,6 +893,13 @@ namespace Com.RelationalAI
             var action = new ModifyWorkspaceAction();
             action.Enable_library = srcName;
             return RunAction(action) != null;
+        }
+
+        public bool CloseDatabase()
+        {
+            var action = new ModifyWorkspaceAction();
+            action.Close_database = conn.DbName;
+            return RunAction(action, isReadOnly: true) != null;
         }
 
         public ICollection<Relation> Cardinality(string relName = null)
